@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <DHT.h>
-#include <LiquidCrystal.h>
 #include <SoftwareSerial.h>
 #include <TimerOne.h>
 
@@ -51,9 +50,94 @@ enum class WifiState : uint8_t {
   RetryDelay,
 };
 
+class CharacterLcd {
+ public:
+  CharacterLcd(uint8_t rs, uint8_t enable, uint8_t d4, uint8_t d5, uint8_t d6,
+                uint8_t d7)
+      : rs_(rs), enable_(enable), data_pins_{d4, d5, d6, d7} {}
+
+  void begin(uint8_t columns, uint8_t rows) {
+    columns_ = columns;
+    rows_ = rows > 2 ? 2 : rows;
+    pinMode(rs_, OUTPUT);
+    pinMode(enable_, OUTPUT);
+    for (uint8_t pin : data_pins_) {
+      pinMode(pin, OUTPUT);
+    }
+
+    delay(50);
+    digitalWrite(rs_, LOW);
+    writeNibble(0x03);
+    delay(5);
+    writeNibble(0x03);
+    delayMicroseconds(150);
+    writeNibble(0x03);
+    writeNibble(0x02);
+    command(0x28);
+    command(0x08);
+    command(0x01);
+    command(0x06);
+    command(0x0C);
+  }
+
+  void setCursor(uint8_t column, uint8_t row) {
+    static const uint8_t rowOffsets[] = {0x00, 0x40};
+    if (row >= rows_) {
+      row = rows_ - 1;
+    }
+    if (column >= columns_) {
+      column = columns_ - 1;
+    }
+    command(static_cast<uint8_t>(0x80 | (rowOffsets[row] + column)));
+  }
+
+  void print(const char *text) {
+    while (*text != '\0') {
+      write(static_cast<uint8_t>(*text++), true);
+    }
+  }
+
+  void print(char value) { write(static_cast<uint8_t>(value), true); }
+
+ private:
+  void pulseEnable() {
+    digitalWrite(enable_, LOW);
+    digitalWrite(enable_, HIGH);
+    delayMicroseconds(1);
+    digitalWrite(enable_, LOW);
+    delayMicroseconds(50);
+  }
+
+  void writeNibble(uint8_t nibble) {
+    for (uint8_t bit = 0; bit < 4; ++bit) {
+      digitalWrite(data_pins_[bit], (nibble >> bit) & 0x01);
+    }
+    pulseEnable();
+  }
+
+  void write(uint8_t value, bool data) {
+    digitalWrite(rs_, data ? HIGH : LOW);
+    writeNibble(value >> 4);
+    writeNibble(value & 0x0F);
+  }
+
+  void command(uint8_t value) {
+    write(value, false);
+    if (value == 0x01 || value == 0x02) {
+      delay(2);
+    }
+  }
+
+  uint8_t rs_;
+  uint8_t enable_;
+  uint8_t data_pins_[4];
+  uint8_t columns_ = 16;
+  uint8_t rows_ = 2;
+};
+
 DHT dht(kDhtPin, DHT11);
-LiquidCrystal lcd(kLcdRsPin, kLcdEnablePin, kLcdD4Pin, kLcdD5Pin, kLcdD6Pin,
-                  kLcdD7Pin);
+CharacterLcd lcd(kLcdRsPin, kLcdEnablePin, kLcdD4Pin, kLcdD5Pin, kLcdD6Pin,
+                 kLcdD7Pin);
 SoftwareSerial esp(kEspRxPin, kEspTxPin);
 
 volatile uint8_t pendingTicks = 0;
@@ -328,7 +412,7 @@ void setup() {
 
   Serial.begin(115200);
   lcd.begin(16, 2);
-  lcd.print(F("Env monitor boot"));
+  lcd.print("Env monitor boot");
   dht.begin();
   Timer1.initialize(kSensorTickUs);
   Timer1.attachInterrupt(onSensorTick);
