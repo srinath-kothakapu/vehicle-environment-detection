@@ -104,8 +104,7 @@ Pins fixed in the sketch: LCD on 13, 12, 11, 10, 9, 8 (RS, EN, D4 to D7); ESP826
 
 Team project at the Department of Electronics and Communication Engineering, Sreenidhi Institute of Science and Technology (SNIST), Hyderabad, under the guidance of Dr. B. Krishnaveni, Assistant Professor.
 
-- B. Bhanuteja
-- K. Karthik Kumar Reddy
+
 - K. Srinath Reddy ([@srinath-kothakapu](https://github.com/srinath-kothakapu)): schematic design, prototype build-up, firmware integration, testing and documentation
 
 The team also wrote the paper "Integrated Sensor Network for Vehicle Environment Detection" about this system.
