@@ -1,7 +1,5 @@
-.pio/
-.vscode/
-src/secrets.h
 secrets.h
-*.elf
 *.hex
-*.map
+*.elf
+.vscode/
+.DS_Store

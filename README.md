@@ -1,81 +1,111 @@
-# Vehicle Environment Detection System
+# Integrated Sensor Network for Vehicle Environment Detection
 
-An Arduino Uno environmental-monitoring example reconstructed from the project
-description in the author's CV. It samples IR, LDR, MQ-2, and DHT11 sensors;
-shows readings on a 16x2 LCD; and drives a buzzer for detected hazards. An
-optional ESP8266 running AT firmware reports readings to ThingSpeak.
+An Arduino Uno based IoT prototype that monitors the environment around a vehicle. Four sensors measure temperature and humidity, harmful gases, nearby objects and ambient light. The readings are shown on a 16x2 LCD, trigger local alerts, and are uploaded over Wi-Fi to a ThingSpeak channel for remote monitoring.
 
-> **Reconstruction notice:** The original firmware and wiring were not
-> available. This is a new, working example based on the CV-listed components,
-> not the original 2023 project source. Sensor readings, calibration, wiring,
-> and performance must be verified on the actual hardware. The CV's sampling
-> and false-positive figures are not validated by this code.
+This was a final-year B.Tech project in Electronics and Communication Engineering at Sreenidhi Institute of Science and Technology, Hyderabad. It is a **team project**, see [Team and credits](#team-and-credits).
 
-## Hardware assumptions and pinout
+![Assembled prototype](docs/images/prototype_overview.jpg)
 
-The pinout is an example for an Arduino Uno. Check the voltage and wiring of
-your own modules before connecting them. Do not feed a 5 V UART output into an
-ESP8266 RX pin.
+## What the system does
 
-| Component | Arduino Uno connection |
+| Sensor | Measures | Used for |
+|---|---|---|
+| DHT11 | Temperature and humidity | Weather and cabin-condition alerts (high humidity, high temperature) |
+| MQ-2 gas sensor | Combustible and harmful gases (for example carbon monoxide, methane) | Gas warning |
+| IR sensor | Nearby object or vehicle | Obstacle / vehicle detection warning |
+| LDR | Ambient light | "No light" warning and switching on a car-light output |
+
+The Arduino reads the sensors, compares them with thresholds, shows the values on the LCD, switches an LED and two outputs, and sends the five values to ThingSpeak.
+
+## Block diagram
+
+```mermaid
+flowchart LR
+    IR[IR sensor] --> MCU
+    LDR[LDR] --> MCU
+    GAS[MQ-2 gas sensor] --> MCU
+    DHT[DHT11] --> MCU
+    PSU[Power supply] --> MCU
+    MCU[Arduino Uno<br/>ATmega328P] --> LCD[16x2 LCD]
+    MCU --> OUT[LED and outputs]
+    MCU --> WIFI[ESP8266 Wi-Fi module]
+    WIFI --> TS[ThingSpeak server]
+```
+
+## How the firmware works
+
+Each cycle the Arduino:
+
+1. Reads humidity and temperature from the DHT11 and the three digital sensor outputs (gas, IR, LDR).
+2. Switches the car-light output when there is no light, and the IR output when something is detected.
+3. Shows humidity, temperature and the gas and IR flags on the LCD.
+4. Checks the alert conditions below and shows a message with the alert LED.
+5. Uploads the values to ThingSpeak, then waits before the next cycle.
+
+| Condition | LCD message | Other action |
+|---|---|---|
+| Humidity above 80 % | `HUMIDITY HIGH` | Alert LED |
+| Temperature above 40 °C | `TEMP HIGH` | Alert LED |
+| Gas sensor output LOW | `GAS DETECT` | Alert LED, `G: YES` |
+| IR sensor output LOW | `IR DETECT` | Alert LED, IR output on, `F: YES` |
+| LDR output HIGH (dark) | `NO LIGHT` | Alert LED, car-light output on |
+
+ThingSpeak fields: 1 humidity, 2 temperature, 3 gas, 4 IR, 5 LDR.
+
+## Results
+
+The photos and charts below come from the working prototype and its ThingSpeak channel.
+
+| LCD during normal operation | Gas detected |
 |---|---|
-| ESP8266 RX / TX | D2 / D3 (SoftwareSerial, 9600 baud; use 3.3 V level shifting) |
-| DHT11 data | D4 |
-| IR sensor digital output | D5, active LOW |
-| Buzzer driver input | D6 |
-| LCD RS / Enable | D7 / D8 |
-| LCD D4 / D5 / D6 / D7 | D9 / D10 / D11 / D12 |
-| LDR voltage divider | A0 |
-| MQ-2 analog output | A1 |
+| ![Normal readings](docs/images/prototype_lcd_normal.jpg) | ![Gas detected](docs/images/lcd_gas_detected.jpg) |
 
-TimerOne uses Timer1, so this example reserves that timer for the 10 Hz sample
-tick. Reassign the LCD pins if they conflict with other hardware. Use an
-appropriate load driver for buzzers that exceed a GPIO pin's current rating.
-MQ-2 heaters require a suitable power supply and warm-up; the example threshold
-is a starting point, not a calibrated gas concentration or safety device.
+| No light detected | ThingSpeak channel charts |
+|---|---|
+| ![No light](docs/images/lcd_no_light.jpg) | ![ThingSpeak charts](docs/images/thingspeak_charts.png) |
 
-## Build and upload
+Example observations from the prototype: humidity 31.00 % and temperature 32.70 °C with gas detected (`G: YES`), and humidity 32.00 % and temperature 32.20 °C with no alerts.
 
-1. Install [PlatformIO Core](https://platformio.org/install/cli) or use the
-   PlatformIO extension in VS Code.
-2. Open this repository as a PlatformIO project.
-3. Optionally copy `src/secrets.example.h` to the ignored `src/secrets.h` and
-   set `WIFI_SSID`, `WIFI_PASSWORD`, and `THINGSPEAK_WRITE_API_KEY`. Never
-   commit the file containing your credentials. Cloud uploads are disabled
-   when these values are blank.
-4. Build and upload to the Uno:
+## Repository contents
 
-   ```sh
-   pio run -e uno
-   pio run -e uno -t upload
-   pio device monitor -b 115200
-   ```
+```
+firmware/vehicle_env_detection/
+    vehicle_env_detection.ino    Arduino sketch
+    secrets.h.example            template for Wi-Fi and ThingSpeak credentials
+docs/images/                     prototype photos and ThingSpeak charts
+```
 
-The ESP8266 must already run ESP-AT firmware and be wired using 3.3 V UART
-levels. The ThingSpeak write key is sent to the ESP8266 for HTTP transmission;
-use Wi-Fi credentials and a write-only key you can rotate.
+## Build and run
 
-## Sampling and cloud fields
+Hardware: Arduino Uno, DHT11, MQ-2 gas sensor module, IR sensor module, LDR module, 16x2 LCD, ESP8266 Wi-Fi module, 5 V regulated supply.
 
-TimerOne generates a 100 ms tick; the foreground loop reads the analog/digital
-sensors on each tick. DHT11 measurements are limited to one every two seconds.
-The ThingSpeak client uploads no more often than every 20 seconds, above the
-usual free-channel 15-second interval.
+1. Install the Arduino IDE and the **DHT sensor library** (Adafruit).
+2. Copy `firmware/vehicle_env_detection/secrets.h.example` to `secrets.h` in the same folder and enter your own Wi-Fi name, password and ThingSpeak write API key. Do not commit `secrets.h`.
+3. Open `vehicle_env_detection.ino` and set `GAS_PIN`, `IR_PIN` and `LDR_PIN` to match your wiring.
+4. Upload the sketch to the Arduino Uno.
 
-The ESP8266 uses `SoftwareSerial` on the Uno, which can briefly mask interrupts
-when sending. Validate the actual sample cadence on hardware; a strict 10 Hz
-guarantee is not claimed. A hardware UART or separate network coprocessor is
-preferable when uninterrupted sampling is required.
+Pins fixed in the sketch: LCD on 13, 12, 11, 10, 9, 8 (RS, EN, D4 to D7); ESP8266 on 2 (RX) and 3 (TX); DHT11 on A0; alert LED on 4; outputs on 5, 6 and 7.
 
-ThingSpeak fields are `field1` temperature in tenths of a degree Celsius,
-`field2` relative humidity in percent, `field3` MQ-2 ADC counts,
-`field4` LDR ADC counts, and `field5` IR detection (`1` = detected). The analog
-smoke alarm threshold defaults to 600 on the 10-bit ADC and must be calibrated
-for the sensor, load, and environment.
+## Notes and limitations
 
-## Project status
+- The sketch in this repository is a cleaned-up version of the code listing printed in the project report. The original listing had broken formatting and missing lines, so the Wi-Fi connection and upload functions were rewritten in the usual ESP8266 AT-command style, and the three input pins are left for you to set.
+- The upload interval is 15 seconds, because free ThingSpeak accounts accept one update per 15 seconds.
+- The alert LED waits 1.5 seconds per alert, so one cycle with several alerts takes longer.
+- The prototype is a demonstration. The sensors are not calibrated, and the thresholds are fixed values, not measured limits.
 
-The sketch and PlatformIO build configuration are a reconstructed starter
-implementation. No physical hardware was available here, so electrical
-connections, sensor behavior, cloud connectivity, alarm timing, the CV's
-claimed sampling rate, and false-positive rate have not been hardware-tested.
+## Future scope
+
+- Data analysis and machine learning on the collected sensor history to predict congestion, weather hazards or air-quality problems
+- More sensors, for example road-surface condition, and cameras for road signs and pedestrians
+- Vehicle-to-vehicle and vehicle-to-infrastructure communication
+- A mobile app with route and weather alerts
+
+## Team and credits
+
+Team project at the Department of Electronics and Communication Engineering, Sreenidhi Institute of Science and Technology (SNIST), Hyderabad, under the guidance of Dr. B. Krishnaveni, Assistant Professor.
+
+- B. Bhanuteja
+- K. Karthik Kumar Reddy
+- K. Srinath Reddy ([@srinath-kothakapu](https://github.com/srinath-kothakapu)): schematic design, prototype build-up, firmware integration, testing and documentation
+
+The team also wrote the paper "Integrated Sensor Network for Vehicle Environment Detection" about this system.
