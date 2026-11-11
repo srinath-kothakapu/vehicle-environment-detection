@@ -184,6 +184,3 @@ This repository represents a team project originally completed as a final-year B
 - Add timestamped local logging and, where useful, a validated database-backed dashboard.
 - Review the electrical design, sensor suitability, and applicable safety requirements before considering any real vehicle installation.
 
-## License
-
-There is no `LICENSE` file in this repository at the time of writing. Unless the project contributors add a license, do not assume that the source or images are licensed for reuse or redistribution.
