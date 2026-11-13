@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  compile-sketch:
+    name: Compile Arduino Uno sketch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - name: Install board core and libraries
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+          arduino-cli lib install "DHT sensor library" "Adafruit Unified Sensor"
+
+      # The real secrets.h is never committed; build with the placeholder template.
+      - name: Create placeholder secrets.h
+        run: cp firmware/vehicle_env_detection/secrets.h.example firmware/vehicle_env_detection/secrets.h
+
+      - name: Compile for Arduino Uno
+        run: arduino-cli compile --fqbn arduino:avr:uno --warnings default firmware/vehicle_env_detection
