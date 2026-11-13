@@ -1,8 +1,10 @@
 # Integrated Sensor Network for Vehicle Environment Detection
 
+![CI](https://github.com/srinath-kothakapu/vehicle-environment-detection/actions/workflows/ci.yml/badge.svg)
+
 This repository contains an Arduino Uno environmental-monitoring prototype for a vehicle cabin. A DHT11 provides temperature and humidity, a digital-output MQ-series gas sensor module provides a gas-warning signal, an IR module provides a nearby-object signal, and an LDR module provides a light/dark signal. The Arduino presents readings and sensor flags on a 16x2 character LCD, drives a local alert LED and low-voltage logic outputs, and can send readings to a ThingSpeak channel through an ESP8266 Wi-Fi module.
 
-This was a final-year B.Tech project in Electronics and Communication Engineering at Sreenidhi Institute of Science and Technology, Hyderabad. It is a team project. The sketch in this repository is a cleaned-up reconstruction of the code listing from the project report: missing or malformed Wi-Fi and ThingSpeak helper code was rewritten in an ESP8266 AT-command style. The hardware input pins that were not specified in the report are marked for verification. Check the code and wiring against your actual prototype before using it.
+This was a final-year B.Tech project in Electronics and Communication Engineering at Sreenidhi Institute of Science and Technology, Hyderabad. It is a team project. The sketch in this repository is a cleaned-up reconstruction of the code listing from the project report: missing or malformed Wi-Fi and ThingSpeak helper code was rewritten in an ESP8266 AT-command style. The hardware input pins that were not specified in the report are marked for verification. Check the code and wiring against your actual prototype before using it. GitHub Actions compiles the sketch for an Arduino Uno on every push, using the placeholder `secrets.h.example`; a successful compile checks that the code builds, not that the wiring or sensor behavior is correct.
 
 ![Assembled prototype](docs/images/prototype_overview.jpg)
 
