@@ -175,7 +175,9 @@ Use the project for education and controlled bench demonstrations only. Do not r
 
 ## Team and credits
 
-This repository represents a team project originally completed as a final-year B.Tech project in Electronics and Communication Engineering at Sreenidhi Institute of Science and Technology, Hyderabad. The repository contains the reconstructed sketch and supporting prototype images. Add or correct individual team credits here if all contributors agree on the attribution to publish.
+This repository represents a team project originally completed as a final-year B.Tech project in Electronics and Communication Engineering at Sreenidhi Institute of Science and Technology, Hyderabad. The repository contains the reconstructed sketch and supporting prototype images.
+
+**My contribution:** I did most of the work on this project. Teammates can be credited here individually if all contributors agree on the attribution to publish.
 
 ## Future work
 
